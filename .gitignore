@@ -52,3 +52,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# PyCharm folder
+.idea/
+
+# logs
+*.txt
