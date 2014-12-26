@@ -104,21 +104,35 @@ class Client(QtCore.QObject):
 
     def on_recv(self, container: DataContainer):
         for case in switch(container.action):
-            if case('CLI'):
+            if case('CLI'):                             #  New ClientInfo
                 self.add_client_info(container)
                 break
-            if case('MSG'):
+            if case('MSG'):                             #  New message
                 self.recv_msg(container)
                 break
-            if case('NCI'):
+            if case('NCI'):                             #  New ClientInfos
                 self.handle_client_infos(container)
                 break
-            if case('CIN'):
+            if case('CIN'):                             # ClientInfo need
                 self.send_client_infos(container)
+                break
+            if case('DEL'):                             # Delete
+                self.handle_deleting(container)
                 break
             if case():
                 self.logger.debug('unknown action: %s' % container.action)
                 break
+
+    def handle_deleting(self, container: DataContainer):
+        self.logger.debug('deleting %s' % self.item(container.address).name)
+        self.clients.pop(self.item(container.address))
+
+    def delete_me(self):
+        self.logger.debug('delete me')
+        for ci in self.clients:
+            if ci.name == self.name:
+                continue
+            self.socket.sendto(b'DEL', ci.addr())
 
     def send_client_infos(self, container: DataContainer):
         msg = 'NCI' + '\n'.join(x.serialize() for x in self.clients)
@@ -133,10 +147,11 @@ class Client(QtCore.QObject):
             if ci.ip == 'localhost':
                 ci.ip = container.address[0]
             self.clients.add(ci)
-            self.socket.sendto(b'CLI' + self.get_self_client_info()
-                               .serialize()
-                               .encode(),
-                               ci.addr())
+            self.send_client_info(self.get_self_client_info(), ci.addr())
+            # self.socket.sendto(b'CLI' + self.get_self_client_info()
+            #                    .serialize()
+            #                    .encode(),
+            #                    ci.addr())
 
     def item(self, addr: tuple) -> ClientInfo:
         for ci in self.clients:

@@ -7,10 +7,17 @@ from client import Client
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, name: str, port: int):
         super().__init__()
+        self.client = None
         self.initialise(name, port)
+
+    def closeEvent(self, event):
+        self.client.delete_me()
+        event.accept()
 
     def initialise(self, name: str, port: int):
         client = Client(port, name)
+
+        self.client = client
 
         central = QtWidgets.QWidget()
 
@@ -27,6 +34,7 @@ class MainWindow(QtWidgets.QMainWindow):
             client.send_msg(message)
 
         send_btn.clicked.connect(send_msg)
+        send_btn.clicked.connect(msg.clear)
         msg_layout.addWidget(msg)
         msg_layout.addWidget(send_btn)
 
@@ -63,6 +71,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 client.connect(ip, port)
 
             ok = QtWidgets.QPushButton('OK')
+
+            ip_line_edit.returnPressed.connect(ok.click)
+            port_line_edit.returnPressed.connect(ok.click)
+
             ok.clicked.connect(on_click)
             main_layout.addWidget(ok)
             tmp.show()
@@ -105,6 +117,10 @@ if __name__ == '__main__':
         main = create_main_window(port, name)
 
     ok = QtWidgets.QPushButton('OK')
+
+    port_line_edit.returnPressed.connect(ok.click)
+    name_line_edit.returnPressed.connect(ok.click)
+
     ok.clicked.connect(on_click)
     main_layout.addWidget(ok)
     getter.show()
