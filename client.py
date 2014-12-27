@@ -125,7 +125,7 @@ class Client(QtCore.QObject):
 
     def handle_deleting(self, container: DataContainer):
         self.logger.debug('deleting %s' % self.item(container.address).name)
-        self.clients.pop(self.item(container.address))
+        self.clients.discard(self.item(container.address))
 
     def delete_me(self):
         self.logger.debug('delete me')
@@ -184,5 +184,5 @@ class Client(QtCore.QObject):
         if ci.ip == 'localhost':
             ci.ip = container.address[0]
         if ci in self.clients:
-            self.clients.pop(ci)
+            self.clients.discard(ci)
         self.clients.add(ci)
