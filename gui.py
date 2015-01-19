@@ -7,6 +7,23 @@ from client import Client
 
 
 # noinspection PyUnresolvedReferences
+def info_window(title, text):
+    information = QtWidgets.QMessageBox()
+    information.setWindowTitle(title)
+    information.setText(text)
+    information.addButton(QtWidgets.QMessageBox.Ok)
+    information.setIcon(QtWidgets.QMessageBox.Information)
+    information.setWindowModality(QtCore.Qt.ApplicationModal)
+    information.exec()
+
+
+def busy():
+    info_window('Information',
+                'You are uploading file now.\r\n'
+                'Wait until upload complete.')
+
+
+# noinspection PyUnresolvedReferences
 class MainWindow(QtWidgets.QMainWindow):
     def initialise_client(self, name, port):
         if isinstance(port, str):
@@ -14,18 +31,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.client = Client(port, name)
 
         self.client.upload_request.connect(self.upload_request)
-        self.client.busy.connect(self.busy)
-
-    @staticmethod
-    def busy():
-        information = QtWidgets.QMessageBox()
-        information.setWindowTitle('Information')
-        information.setText('You are uploading file now.\r\n'
-                            'Wait until upload complete.')
-        information.addButton(QtWidgets.QMessageBox.Ok)
-        information.setIcon(QtWidgets.QMessageBox.Information)
-        information.setWindowModality(QtCore.Qt.ApplicationModal)
-        information.exec()
+        self.client.busy.connect(busy)
 
     def upload_request(self, filename: str, size: str, name: str):
         request_window = QtWidgets.QMessageBox()
@@ -106,8 +112,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         def send_msg():
             message = msg.text()
+            if not message:
+                return
             self.client.send_msg(message, self.privates.copy())
-            self.privates.clear()
 
         send_btn.clicked.connect(send_msg)
         send_btn.clicked.connect(msg.clear)
@@ -132,7 +139,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.privates = names.copy()
 
         clients_list.private_with.connect(set_private)
-        clients_list.upload_file.connect(self.client.upload)
+        clients_list.upload_file.connect(self.client.send_upload_request)
 
         def del_client(name: str):
             match = clients_list.findItems(name, QtCore.Qt.MatchExactly)
@@ -143,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         clear_button = QtWidgets.QPushButton('&Reset')
         clear_button.clicked.connect(lambda: clients_list.clearSelection())
+        clear_button.clicked.connect(lambda: self.privates.clear())
         grid_layout.addWidget(clear_button, 1, 1)
 
         self.setCentralWidget(central)
@@ -188,7 +196,20 @@ class MainWindow(QtWidgets.QMainWindow):
         connect_action.triggered.connect(conn_to)
         main_toolbar.addAction(connect_action)
 
+        def help_window():
+            text = """Простой децентрализованный чат
+Выделите пользователей в списке, чтобы отправить им приватные сообщения.
+Нажмите правой кнопкой на пользователе и нажмите Upload file, чтобы начать передачу файла.
 
+© Copyright Gallyam Biktashev."""
+            info_window('Help', text)
+
+        help_action = QtWidgets.QAction('Help', self)
+        help_action.triggered.connect(help_window)
+        main_toolbar.addAction(help_action)
+
+
+# noinspection PyUnresolvedReferences
 class ClientsList(QtWidgets.QListWidget):
     wrong_files_count = QtCore.pyqtSignal()
     private_with = QtCore.pyqtSignal(list)
